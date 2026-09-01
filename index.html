@@ -1,97 +1,57 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>coder-app-name</title>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
-    <style>
-      /* 内联样式确保主题色立即生效，避免闪烁 */
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        height: 100%;
-      }
-      html.light,
-      html.light body {
-        background-color: #ffffff !important;
-        color: #000000;
-      }
-      html.dark,
-      html.dark body {
-        background-color: #1a1a1a !important;
-        color: #ffffff;
-      }
-    </style>
-    <script>
-      // 在 React 加载前立即设置主题，避免闪烁
-      (function () {
-        const isInIframe = window.self !== window.top;
+    <title>Wisdom In The Streets Podcast — Real Wisdom. Real Streets. Real Talk.</title>
+    <meta name="description" content="Wisdom In The Streets is a motivational podcast hosted by Marvin Marbell — real conversations about hustle, money, family and faith, recorded from the street corners of Accra." />
+    <meta name="keywords" content="podcast, motivation, Accra, Ghana, Marvin Marbell, wisdom, hustle, street wisdom" />
+    <meta name="author" content="Marvin Marbell" />
 
-        function applyThemeToDOM(theme) {
-          document.documentElement.classList.remove("light", "dark");
-          document.documentElement.classList.add(theme);
-          document.documentElement.setAttribute("data-theme", theme);
-        }
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Wisdom In The Streets" />
+    <meta property="og:title" content="Wisdom In The Streets Podcast" />
+    <meta property="og:description" content="Real Wisdom. Real Streets. Real Talk. A motivational podcast hosted by Marvin Marbell." />
+    <meta property="og:image" content="https://image.qwenlm.ai/generated-images/e34a33cd-4557-40ac-b6a6-f6fbed794ba0/_result.png" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@WITS_Podcast" />
 
-        if (isInIframe) {
-          // 监听父窗口主动推送的主题消息
-          window.addEventListener("message", function (event) {
-            if (event.data && typeof event.data.theme === "string") {
-              const theme = event.data.theme;
-              if (theme === "light" || theme === "dark") {
-                applyThemeToDOM(theme);
-              }
-            }
-          });
-        } else {
-          // 非 iframe 环境，使用默认 light 主题
-          applyThemeToDOM("light");
-        }
-      })();
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230a192f'/%3E%3Crect x='25' y='10' width='14' height='26' rx='7' fill='%2364ffda'/%3E%3Cpath d='M18 30a14 14 0 0 0 28 0' stroke='%23ff6b35' stroke-width='4' fill='none' stroke-linecap='round'/%3E%3Cline x1='32' y1='44' x2='32' y2='52' stroke='%23ff6b35' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "PodcastSeries",
+        "name": "Wisdom In The Streets",
+        "alternateName": "WITS Podcast",
+        "description": "Real Wisdom. Real Streets. Real Talk. Motivational conversations hosted by Marvin Marbell from the street corners of Accra, Ghana.",
+        "url": "https://witspodcast.com",
+        "webFeed": "https://witspodcast.com/feed.xml",
+        "inLanguage": "en",
+        "genre": ["Motivational", "Self-Improvement", "Business"],
+        "author": { "@type": "Person", "name": "Marvin Marbell" }
+      }
     </script>
-      <script>
+
+    <script>
+      // Apply saved theme before first paint (default: dark)
       (function () {
-        if (window.self === window.top) return;
-        var reported = {};
-        window.addEventListener("error", function (event) {
-          // 资源加载失败的 error 事件没有 message，此处仅上报 JS 运行时错误
-          if (!event || !event.message) return;
-          var key =
-            event.message + "|" + (event.filename || "") + "|" + (event.lineno || 0);
-          if (reported[key]) return; // 相同错误只上报一次，避免渲染循环刷屏
-          reported[key] = true;
-          try {
-            window.parent.postMessage(
-              {
-                type: "sandbox-runtime-error",
-                payload: {
-                  message: String(event.message).slice(0, 500),
-                  filename: event.filename || "",
-                  lineno: event.lineno || 0,
-                  colno: event.colno || 0,
-                  stack:
-                    event.error && event.error.stack
-                      ? String(event.error.stack).slice(0, 2000)
-                      : ""
-                }
-              },
-              "*"
-            );
-          } catch (e) {
-            /* 上报失败不影响页面运行 */
-          }
-        });
+        try {
+          var t = localStorage.getItem("wits-theme") || "dark";
+          document.documentElement.classList.remove("dark", "light");
+          document.documentElement.classList.add(t);
+          document.documentElement.setAttribute("data-theme", t);
+        } catch (e) {}
       })();
     </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>
