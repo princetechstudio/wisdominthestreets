@@ -1,0 +1,61 @@
+{
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist",
+  "framework": "vite",
+  "env": {
+    "VITE_SPOTIFY_SHOW_URL": "@spotify_url",
+    "VITE_APPLE_PODCASTS_URL": "@apple_url",
+    "VITE_YOUTUBE_CHANNEL_URL": "@youtube_url",
+    "VITE_RSS_FEED_URL": "@rss_url",
+    "VITE_FORM_ENDPOINT": "@form_endpoint",
+    "VITE_NEWSLETTER_ACTION": "@newsletter_action",
+    "VITE_WHATSAPP_NUMBER": "@whatsapp_number",
+    "VITE_GA_ID": "@ga_id",
+    "VITE_PODTRAC_PREFIX": "@podtrac_prefix"
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=3600, s-maxage=3600"
+        },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "SAMEORIGIN"
+        },
+        {
+          "key": "X-XSS-Protection",
+          "value": "1; mode=block"
+        },
+        {
+          "key": "Referrer-Policy",
+          "value": "strict-origin-when-cross-origin"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache, no-store, must-revalidate"
+        }
+      ]
+    },
+    {
+      "source": "\\.(js|css|woff2?|ttf|otf|eot|svg)$",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    }
+  ]
+}
