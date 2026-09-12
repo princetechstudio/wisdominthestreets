@@ -24,6 +24,10 @@ export interface Toast {
   id: number;
   msg: string;
   kind: "success" | "error" | "info";
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 interface CmsState {
@@ -41,7 +45,9 @@ interface CmsState {
 
   upsertEpisode: (ep: Episode) => void;
   deleteEpisode: (id: number) => void;
+  restoreEpisode: (ep: Episode) => void;
   togglePublish: (id: number) => void;
+  importEpisodes: (eps: Episode[]) => void;
 
   upsertQuote: (q: Quote) => void;
   deleteQuote: (id: number) => void;
@@ -51,9 +57,15 @@ interface CmsState {
   setArchived: (id: number, archived: boolean) => void;
   deleteMessage: (id: number) => void;
   receiveMessage: (m: Omit<Message, "id" | "date" | "read" | "archived">) => void;
+  bulkMarkRead: (ids: number[]) => void;
+  bulkArchive: (ids: number[]) => void;
+  bulkDeleteMessages: (ids: number[]) => void;
 
   updateSettings: (patch: Partial<Settings>) => void;
   resetDemo: () => void;
+
+  hasSeenWelcome: boolean;
+  markWelcomeSeen: () => void;
 }
 
 interface Persisted {
@@ -107,6 +119,7 @@ let toastSeq = 0;
 export const useCms = create<CmsState>()((set, get) => ({
   ...loadInitial(),
   toasts: [],
+  hasSeenWelcome: localStorage.getItem("wits-cms-welcome") === "1",
 
   toast: (msg, kind = "success") => {
     const id = ++toastSeq;
@@ -135,9 +148,45 @@ export const useCms = create<CmsState>()((set, get) => ({
 
   deleteEpisode: (id) => {
     const ep = get().episodes.find((e) => e.id === id);
+    if (!ep) return;
     set((s) => ({ episodes: s.episodes.filter((e) => e.id !== id) }));
-    if (ep) get().log("episode", `EP ${ep.num} deleted — "${ep.title}"`);
-    get().toast("Episode deleted", "info");
+    get().log("episode", `EP ${ep.num} deleted — "${ep.title}"`);
+
+    // Show toast with undo button
+    const toastId = Date.now();
+    set((s) => ({
+      toasts: [...s.toasts, {
+        id: toastId,
+        msg: `EP ${ep.num} deleted`,
+        kind: "info" as const,
+        action: {
+          label: "Undo",
+          onClick: () => {
+            get().restoreEpisode(ep);
+            get().dismissToast(toastId);
+          }
+        }
+      }]
+    }));
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => get().dismissToast(toastId), 5000);
+    persist(get());
+  },
+
+  restoreEpisode: (ep) => {
+    set((s) => ({ episodes: [...s.episodes, ep].sort((a, b) => b.date.localeCompare(a.date)) }));
+    get().log("episode", `EP ${ep.num} restored — "${ep.title}"`);
+    get().toast(`Episode ${ep.num} restored`, "success");
+    persist(get());
+  },
+
+  importEpisodes: (eps) => {
+    const existing = get().episodes;
+    const newEps = eps.filter((ep) => !existing.some((e) => e.id === ep.id));
+    set((s) => ({ episodes: [...s.episodes, ...newEps].sort((a, b) => b.date.localeCompare(a.date)) }));
+    get().log("episode", `Imported ${newEps.length} episode${newEps.length !== 1 ? "s" : ""}`);
+    get().toast(`${newEps.length} episode${newEps.length !== 1 ? "s" : ""} imported`, "success");
     persist(get());
   },
 
@@ -198,6 +247,27 @@ export const useCms = create<CmsState>()((set, get) => ({
     persist(get());
   },
 
+  bulkMarkRead: (ids) => {
+    set((s) => ({ messages: s.messages.map((m) => (ids.includes(m.id) ? { ...m, read: true } : m)) }));
+    get().log("message", `Marked ${ids.length} message${ids.length !== 1 ? "s" : ""} as read`);
+    get().toast(`${ids.length} message${ids.length !== 1 ? "s" : ""} marked as read`, "success");
+    persist(get());
+  },
+
+  bulkArchive: (ids) => {
+    set((s) => ({ messages: s.messages.map((m) => (ids.includes(m.id) ? { ...m, archived: true } : m)) }));
+    get().log("message", `Archived ${ids.length} message${ids.length !== 1 ? "s" : ""}`);
+    get().toast(`${ids.length} message${ids.length !== 1 ? "s" : ""} archived`, "success");
+    persist(get());
+  },
+
+  bulkDeleteMessages: (ids) => {
+    set((s) => ({ messages: s.messages.filter((m) => !ids.includes(m.id)) }));
+    get().log("message", `Deleted ${ids.length} message${ids.length !== 1 ? "s" : ""}`);
+    get().toast(`${ids.length} message${ids.length !== 1 ? "s" : ""} deleted`, "info");
+    persist(get());
+  },
+
   receiveMessage: (m) => {
     const msg: Message = { ...m, id: Date.now(), date: new Date().toISOString(), read: false, archived: false };
     set((s) => ({ messages: [msg, ...s.messages] }));
@@ -219,6 +289,11 @@ export const useCms = create<CmsState>()((set, get) => ({
     } catch { /* ignore */ }
     set({ ...loadSeed() });
     get().toast("Demo data restored to factory state", "info");
+  },
+
+  markWelcomeSeen: () => {
+    localStorage.setItem("wits-cms-welcome", "1");
+    set({ hasSeenWelcome: true });
   },
 }));
 

@@ -4,6 +4,7 @@ import { useCms } from "./cms";
 import { fmtDate, timeAgo, type Message, type MessageType } from "./data";
 import { EmptyState, IcCopy, IcExt, IcInbox, IcWhatsApp, TwoStepDelete, inputCls } from "./ui";
 import { IcSearch } from "./ui";
+import ReplyTemplates from "./ReplyTemplates";
 
 type Tab = "all" | "unread" | "guest" | "archived";
 
@@ -24,6 +25,8 @@ export default function MessagesAdmin() {
   const [tab, setTab] = useState<Tab>("all");
   const [q, setQ] = useState("");
   const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
+  const [showTemplates, setShowTemplates] = useState(false);
 
   const counts: Record<Tab, number> = {
     all: messages.filter((m) => !m.archived).length,
@@ -52,6 +55,36 @@ export default function MessagesAdmin() {
     if (!m.read) markRead(m.id, true);
   };
 
+  const toggleSelect = (id: number) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const selectAll = () => {
+    if (selectedIds.size === list.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(list.map((m) => m.id)));
+    }
+  };
+
+  const bulkMarkRead = useCms((s) => s.bulkMarkRead);
+  const bulkArchive = useCms((s) => s.bulkArchive);
+  const bulkDelete = useCms((s) => s.bulkDeleteMessages);
+
+  const handleBulkAction = (action: "read" | "archive" | "delete") => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    if (action === "read") bulkMarkRead(ids);
+    else if (action === "archive") bulkArchive(ids);
+    else if (action === "delete") bulkDelete(ids);
+    setSelectedIds(new Set());
+  };
+
   return (
     <div className="space-y-5">
       <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-wrap items-end justify-between gap-4">
@@ -67,11 +100,34 @@ export default function MessagesAdmin() {
 
       <div className="flex flex-wrap gap-1.5" role="tablist" aria-label="Message filters">
         {(["all", "unread", "guest", "archived"] as const).map((t) => (
-          <button key={t} role="tab" aria-selected={tab === t} onClick={() => { setTab(t); setSelectedId(null); }} className={`rounded-full border px-4 py-2 font-head text-[11px] font-bold uppercase tracking-widest transition ${tab === t ? (t === "unread" ? "border-amber/60 bg-amber/10 text-amber" : "border-teal/60 bg-teal/10 text-teal") : "border-line text-mute hover:text-ink"}`}>
+          <button key={t} role="tab" aria-selected={tab === t} onClick={() => { setTab(t); setSelectedId(null); setSelectedIds(new Set()); }} className={`rounded-full border px-4 py-2 font-head text-[11px] font-bold uppercase tracking-widest transition ${tab === t ? (t === "unread" ? "border-amber/60 bg-amber/10 text-amber" : "border-teal/60 bg-teal/10 text-teal") : "border-line text-mute hover:text-ink"}`}>
             {t} <span className="tnum opacity-60">{counts[t]}</span>
           </button>
         ))}
       </div>
+
+      {/* Bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-teal/40 bg-teal/[0.05] px-4 py-3">
+          <p className="font-head text-xs font-bold uppercase tracking-widest text-teal">
+            {selectedIds.size} selected
+          </p>
+          <div className="flex gap-2">
+            <button onClick={() => handleBulkAction("read")} className="font-head rounded-lg border border-line px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-mute transition hover:text-ink">
+              Mark read
+            </button>
+            <button onClick={() => handleBulkAction("archive")} className="font-head rounded-lg border border-line px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-mute transition hover:text-amber">
+              Archive
+            </button>
+            <button onClick={() => handleBulkAction("delete")} className="font-head rounded-lg border border-ember/50 px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-ember transition hover:bg-ember hover:text-[#0a192f]">
+              Delete
+            </button>
+            <button onClick={() => setSelectedIds(new Set())} className="font-head rounded-lg border border-line px-3 py-1.5 text-[10px] font-bold uppercase tracking-widest text-mute transition hover:text-ink">
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
 
       {list.length === 0 ? (
         <EmptyState icon={<IcInbox size={22} />} title="NOTHING ON THE WIRE" sub={tab === "unread" ? "Inbox zero. The corner respects you." : "No conversations in this view yet."} />
@@ -79,13 +135,43 @@ export default function MessagesAdmin() {
         <div className="grid overflow-hidden rounded-xl border border-line bg-panel lg:grid-cols-[380px_minmax(0,1fr)]">
           {/* list */}
           <ul className="max-h-[70vh] divide-y divide-line overflow-y-auto border-b border-line lg:border-b-0 lg:border-r">
+            {/* Select all checkbox */}
+            {list.length > 0 && (
+              <li className="border-b border-line bg-sunken/30 px-4 py-2">
+                <label className="flex cursor-pointer items-center gap-2.5">
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.size === list.length && list.length > 0}
+                    onChange={selectAll}
+                    className="h-4 w-4 rounded border-line accent-teal"
+                  />
+                  <span className="font-head text-[10px] font-bold uppercase tracking-widest text-faint">
+                    {selectedIds.size === list.length ? "Deselect all" : "Select all"}
+                  </span>
+                </label>
+              </li>
+            )}
             {list.map((m) => (
               <li key={m.id}>
-                <button
-                  onClick={() => open(m)}
-                  aria-current={selectedId === m.id}
-                  className={`relative flex w-full items-start gap-3 px-4 py-3.5 text-left transition-colors ${selectedId === m.id ? "bg-teal/[0.06]" : "hover:bg-raise/40"}`}
+                <div
+                  className={`relative flex w-full items-start gap-3 px-4 py-3.5 transition-colors ${selectedId === m.id ? "bg-teal/[0.06]" : "hover:bg-raise/40"}`}
                 >
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(m.id)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleSelect(m.id);
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                    className="mt-1 h-4 w-4 shrink-0 rounded border-line accent-teal"
+                    aria-label={`Select message from ${m.name}`}
+                  />
+                  <button
+                    onClick={() => open(m)}
+                    aria-current={selectedId === m.id}
+                    className="flex min-w-0 flex-1 items-start gap-3 text-left"
+                  >
                   {selectedId === m.id && <span className="absolute inset-y-0 left-0 w-0.5 bg-teal" aria-hidden="true" />}
                   <span className={`font-display mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-lg text-sm ${!m.read && !m.archived ? "bg-ember/15 text-ember" : "bg-sunken text-faint"}`}>
                     {m.name.split(" ").map((w) => w[0]).slice(0, 2).join("")}
@@ -101,7 +187,8 @@ export default function MessagesAdmin() {
                       {!m.read && !m.archived && <span className="h-1.5 w-1.5 rounded-full bg-ember" aria-label="Unread" />}
                     </span>
                   </span>
-                </button>
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -126,6 +213,12 @@ export default function MessagesAdmin() {
                   </div>
 
                   <div className="mt-5 flex flex-wrap items-center gap-2.5">
+                    <button
+                      onClick={() => setShowTemplates(true)}
+                      className="font-head inline-flex items-center gap-2 rounded-lg border border-ember/50 px-4 py-2.5 text-[11px] font-bold uppercase tracking-widest text-ember transition hover:bg-ember hover:text-[#0a192f]"
+                    >
+                      <IcCopy size={13} /> Reply with template
+                    </button>
                     <a
                       href={`https://wa.me/${settings.whatsapp.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi ${selected.name.split(" ")[0]}, Marvin here from Wisdom In The Streets — thanks for "${selected.subject}".`)}`}
                       target="_blank" rel="noreferrer"
@@ -168,6 +261,9 @@ export default function MessagesAdmin() {
           </div>
         </div>
       )}
+
+      {/* Reply templates modal */}
+      <ReplyTemplates message={showTemplates && selected ? selected : null} onClose={() => setShowTemplates(false)} />
     </div>
   );
 }

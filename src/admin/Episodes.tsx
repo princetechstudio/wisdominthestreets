@@ -3,7 +3,8 @@ import { useLocation } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useCms } from "./cms";
 import { CATEGORIES, PALETTES, fmtClock, fmtDate, fmtPlays, uid, type Category, type Episode, type ShowNote } from "./data";
-import { Drawer, EmptyState, Field, IcClock, IcEdit, IcMic, IcPlus, IcSearch, Switch, TwoStepDelete, inputCls } from "./ui";
+import { Drawer, EmptyState, Field, IcClock, IcDownload, IcEdit, IcEye, IcMic, IcPlus, IcSearch, Switch, TwoStepDelete, inputCls } from "./ui";
+import EpisodePreview from "./EpisodePreview";
 
 /* ---------------- form state ---------------- */
 interface FormState {
@@ -214,6 +215,8 @@ export default function EpisodesAdmin() {
   const episodes = useCms((s) => s.episodes);
   const togglePublish = useCms((s) => s.togglePublish);
   const deleteEpisode = useCms((s) => s.deleteEpisode);
+  const importEpisodes = useCms((s) => s.importEpisodes);
+  const toast = useCms((s) => s.toast);
 
   const [q, setQ] = useState("");
   const [tab, setTab] = useState<StatusTab>("all");
@@ -222,6 +225,56 @@ export default function EpisodesAdmin() {
   const [editing, setEditing] = useState<Episode | "new" | null>(
     (location.state as { new?: boolean } | null)?.new ? "new" : null
   );
+  const [previewId, setPreviewId] = useState<number | null>(null);
+
+  const exportEpisodes = () => {
+    const csv = [
+      ["Number", "Title", "Category", "Guest", "Duration", "Date", "Plays", "Status", "Tags", "Description"].join(","),
+      ...episodes.map((ep) => [
+        ep.num,
+        `"${ep.title.replace(/"/g, '""')}"`,
+        ep.category,
+        ep.guest ? `"${ep.guest.name}"` : "",
+        fmtClock(ep.duration),
+        ep.date,
+        ep.plays,
+        ep.status,
+        `"${ep.tags.join(", ")}"`,
+        `"${ep.description.replace(/"/g, '""')}"`,
+      ].join(",")),
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `wits-episodes-${new Date().toISOString().split("T")[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Episodes exported to CSV", "success");
+  };
+
+  const importEpisodesFromJson = () => {
+    const input = document.createElement("input");
+    input.type = "file";
+    input.accept = ".json";
+    input.onchange = async (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (Array.isArray(data)) {
+          importEpisodes(data);
+        } else {
+          toast("Invalid JSON format", "error");
+        }
+      } catch {
+        toast("Failed to parse JSON file", "error");
+      }
+    };
+    input.click();
+  };
 
   const list = useMemo(() => {
     let l = [...episodes];
@@ -249,9 +302,17 @@ export default function EpisodesAdmin() {
           <p className="font-head text-[11px] font-semibold uppercase tracking-[0.24em] text-teal">Library management</p>
           <h1 className="font-display mt-1 text-5xl leading-[0.92] tracking-wide text-ink sm:text-6xl">EPISODES</h1>
         </div>
-        <button onClick={() => setEditing("new")} className="font-head group inline-flex items-center gap-2.5 rounded-lg bg-ember px-5 py-3 text-xs font-bold uppercase tracking-[0.14em] text-[#0a192f] shadow-ember transition-all hover:-translate-y-0.5 hover:brightness-110">
-          <IcPlus size={15} className="transition-transform group-hover:rotate-90" /> New episode
-        </button>
+        <div className="flex gap-2">
+          <button onClick={importEpisodesFromJson} className="font-head inline-flex items-center gap-2 rounded-lg border border-line px-4 py-3 text-xs font-bold uppercase tracking-widest text-mute transition hover:border-teal/50 hover:text-teal">
+            <IcDownload size={14} className="rotate-180" /> Import
+          </button>
+          <button onClick={exportEpisodes} className="font-head inline-flex items-center gap-2 rounded-lg border border-line px-4 py-3 text-xs font-bold uppercase tracking-widest text-mute transition hover:border-teal/50 hover:text-teal">
+            <IcDownload size={14} /> Export CSV
+          </button>
+          <button onClick={() => setEditing("new")} className="font-head group inline-flex items-center gap-2.5 rounded-lg bg-ember px-5 py-3 text-xs font-bold uppercase tracking-[0.14em] text-[#0a192f] shadow-ember transition-all hover:-translate-y-0.5 hover:brightness-110">
+            <IcPlus size={15} className="transition-transform group-hover:rotate-90" /> New episode
+          </button>
+        </div>
       </motion.div>
 
       {/* toolbar */}
@@ -322,6 +383,7 @@ export default function EpisodesAdmin() {
                   {e.status}
                 </span>
                 <div className="flex items-center justify-end gap-1.5">
+                  <button onClick={() => setPreviewId(e.id)} aria-label={`Preview EP ${e.num}`} className="grid h-8 w-8 place-items-center rounded-md border border-line text-mute transition hover:border-teal/60 hover:text-teal"><IcEye size={14} /></button>
                   <button onClick={() => setEditing(e)} aria-label={`Edit EP ${e.num}`} className="grid h-8 w-8 place-items-center rounded-md border border-line text-mute transition hover:border-teal/60 hover:text-teal"><IcEdit size={14} /></button>
                   <TwoStepDelete label={`Delete EP ${e.num}`} onConfirm={() => deleteEpisode(e.id)} />
                 </div>
@@ -349,6 +411,9 @@ export default function EpisodesAdmin() {
           />
         )}
       </Drawer>
+
+      {/* preview */}
+      <EpisodePreview episodeId={previewId} onClose={() => setPreviewId(null)} />
     </div>
   );
 }

@@ -236,6 +236,14 @@ export function ToastHost() {
               {t.kind === "error" ? <IcX size={12} /> : <IcCheck size={12} />}
             </span>
             <span className="flex-1 font-medium text-ink">{t.msg}</span>
+            {t.action && (
+              <button
+                onClick={t.action.onClick}
+                className="font-head rounded-md bg-teal/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-widest text-teal transition hover:bg-teal/25"
+              >
+                {t.action.label}
+              </button>
+            )}
             <button onClick={() => dismiss(t.id)} aria-label="Dismiss" className="text-faint transition hover:text-ink"><IcX size={13} /></button>
           </motion.div>
         ))}

@@ -4,6 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useCms } from "./cms";
 import { IcDash, IcGear, IcInbox, IcMenu, IcMic, IcQuote, IcX, ToastHost } from "./ui";
 import { selectDrafts, selectUnread } from "./cms";
+import CommandPalette from "./CommandPalette";
+import WelcomeScreen from "./WelcomeScreen";
+import KeyboardShortcuts from "./KeyboardShortcuts";
 
 const NAV = [
   { to: "/", label: "Dashboard", icon: <IcDash size={17} />, end: true },
@@ -141,6 +144,14 @@ export default function Shell() {
               <p className="font-head truncate text-[10px] font-semibold uppercase tracking-[0.24em] text-faint">WITS console / {TITLES[location.pathname] ?? "Dashboard"}</p>
               <h1 className="font-display truncate text-2xl leading-none tracking-wide text-ink sm:text-[26px]">{TITLES[location.pathname] ?? "Dashboard"}</h1>
             </div>
+            <button
+              onClick={() => window.dispatchEvent(new KeyboardEvent("keydown", { key: "k", metaKey: true }))}
+              className="hidden items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-xs text-mute transition hover:text-ink sm:flex"
+              aria-label="Open command palette"
+            >
+              <kbd className="rounded bg-sunken px-1.5 py-0.5 font-mono text-[10px]">⌘K</kbd>
+              <span>Search</span>
+            </button>
             <span className="tnum hidden items-center gap-2 rounded-lg border border-line bg-panel px-3 py-2 text-xs font-semibold text-mute sm:flex" aria-label="Current time">
               <span className="live-dot h-1.5 w-1.5 rounded-full bg-ember" aria-hidden="true" />
               {now.toLocaleTimeString("en-GB")}
@@ -171,6 +182,9 @@ export default function Shell() {
       </div>
 
       <ToastHost />
+      <CommandPalette />
+      <WelcomeScreen />
+      <KeyboardShortcuts />
     </div>
   );
 }
