@@ -145,7 +145,7 @@ export default function CommandPalette() {
                         onClick={() => handleSelect(cmd)}
                         onMouseEnter={() => setSelected(i)}
                         className={`flex w-full items-center gap-3 px-5 py-3 text-left transition ${
-                          selected === i ? "bg-teal/[0.08]" : "hover:bg-raise/40"
+                          selected === i ? "bg-teal/10" : "hover:bg-raise/40"
                         }`}
                       >
                         <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-lg ${

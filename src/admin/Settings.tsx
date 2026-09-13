@@ -70,7 +70,7 @@ export default function SettingsAdmin() {
         )}
       </div>
 
-      <motion.section initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.45 }} className="rounded-xl border border-ember/30 bg-ember/[0.04] p-6">
+      <motion.section initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.45 }} className="rounded-xl border border-ember/30 bg-ember/5 p-6">
         <h2 className="font-display flex items-center gap-2.5 text-2xl tracking-wide text-ember"><IcAlert size={20} /> DANGER ZONE</h2>
         <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>

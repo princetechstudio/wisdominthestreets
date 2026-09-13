@@ -81,7 +81,7 @@ export default function WelcomeScreen() {
               </div>
             </div>
 
-            <div className="rounded-xl border border-teal/30 bg-teal/[0.05] p-5">
+            <div className="rounded-xl border border-teal/30 bg-teal/10 p-5">
               <p className="font-head text-xs font-bold uppercase tracking-widest text-teal">Pro tip</p>
               <p className="mt-2 text-sm text-ink">
                 Press <kbd className="rounded border border-teal/40 bg-panel px-2 py-0.5 font-mono text-xs">⌘K</kbd> (or <kbd className="rounded border border-teal/40 bg-panel px-2 py-0.5 font-mono text-xs">Ctrl+K</kbd>) anytime to open the command palette — search episodes, navigate quickly, and execute actions without touching the mouse.

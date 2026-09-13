@@ -73,7 +73,7 @@ export default function Shell() {
             end={n.end}
             className={({ isActive }) =>
               `group relative flex items-center gap-3 rounded-lg px-3.5 py-2.5 font-head text-[13px] font-semibold transition-all ${
-                isActive ? "bg-teal/[0.08] text-teal" : "text-mute hover:bg-raise/60 hover:text-ink"
+                isActive ? "bg-teal/10 text-teal" : "text-mute hover:bg-raise/60 hover:text-ink"
               }`
             }
           >
@@ -108,12 +108,12 @@ export default function Shell() {
   );
 
   return (
-    <div className="console-bg min-h-screen text-ink" style={{ backgroundColor: "var(--wits-bg)", color: "var(--wits-ink)" }}>
+    <div className="console-bg min-h-screen bg-base text-ink">
       <div className="grid-fade" aria-hidden="true" />
       <div className="noise-overlay" aria-hidden="true" />
 
       {/* sidebar (desktop) */}
-      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-line bg-panel/80 backdrop-blur-md lg:block">
+      <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 border-r border-line bg-panel backdrop-blur-md lg:block">
         {sidebar}
       </aside>
 
@@ -137,7 +137,7 @@ export default function Shell() {
 
       {/* main column */}
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-line backdrop-blur-md" style={{ backgroundColor: "color-mix(in srgb, var(--wits-bg) 85%, transparent)" }}>
+        <header className="sticky top-0 z-30 border-b border-line bg-base backdrop-blur-md">
           <div className="flex items-center gap-4 px-4 py-3.5 sm:px-6">
             <button onClick={() => setNav(true)} aria-label="Open menu" className="text-mute transition hover:text-ink lg:hidden"><IcMenu size={20} /></button>
             <div className="min-w-0 flex-1">

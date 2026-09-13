@@ -99,7 +99,7 @@ export default function QuotesAdmin() {
               initial={{ opacity: 0, y: 16 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.35, delay: Math.min(i * 0.04, 0.35) }}
-              className={`group relative mb-4 break-inside-avoid rounded-xl border p-5 transition-all hover:-translate-y-0.5 ${x.featured ? "border-ember/40 bg-ember/[0.04] hover:shadow-ember" : "border-line bg-panel hover:border-teal/40 hover:shadow-glow"}`}
+              className={`group relative mb-4 break-inside-avoid rounded-xl border p-5 transition-all hover:-translate-y-0.5 ${x.featured ? "border-ember/40 bg-ember/5 hover:shadow-ember" : "border-line bg-panel hover:border-teal/40 hover:shadow-glow"}`}
             >
               <div className="flex items-start justify-between gap-3">
                 <IcQuote size={22} className={x.featured ? "text-ember" : "text-teal"} />

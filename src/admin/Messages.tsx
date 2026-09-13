@@ -108,7 +108,7 @@ export default function MessagesAdmin() {
 
       {/* Bulk action bar */}
       {selectedIds.size > 0 && (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-teal/40 bg-teal/[0.05] px-4 py-3">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-teal/40 bg-teal/10 px-4 py-3">
           <p className="font-head text-xs font-bold uppercase tracking-widest text-teal">
             {selectedIds.size} selected
           </p>
@@ -154,7 +154,7 @@ export default function MessagesAdmin() {
             {list.map((m) => (
               <li key={m.id}>
                 <div
-                  className={`relative flex w-full items-start gap-3 px-4 py-3.5 transition-colors ${selectedId === m.id ? "bg-teal/[0.06]" : "hover:bg-raise/40"}`}
+                  className={`relative flex w-full items-start gap-3 px-4 py-3.5 transition-colors ${selectedId === m.id ? "bg-teal/10" : "hover:bg-raise/40"}`}
                 >
                   <input
                     type="checkbox"

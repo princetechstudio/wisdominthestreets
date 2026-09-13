@@ -154,7 +154,7 @@ export default function Dashboard() {
             </ul>
           </motion.section>
 
-          <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.22 }} className={`rounded-xl border p-5 ${drafts.length ? "border-amber/40 bg-amber/[0.05]" : "border-line bg-panel"}`}>
+          <motion.section initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.22 }} className={`rounded-xl border p-5 ${drafts.length ? "border-amber/40 bg-amber/5" : "border-line bg-panel"}`}>
             <div className="flex items-center justify-between">
               <h2 className="font-display text-2xl tracking-wide text-ink">IN THE OVEN</h2>
               <span className={`rounded-full px-2.5 py-1 font-head text-[10px] font-bold uppercase tracking-widest ${drafts.length ? "bg-amber/15 text-amber" : "bg-teal/10 text-teal"}`}>
