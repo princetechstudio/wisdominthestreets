@@ -8,6 +8,7 @@ import MessagesAdmin from "./admin/Messages";
 import SettingsAdmin from "./admin/Settings";
 
 export default function App() {
+  console.log("App component rendering");
   return (
     <MotionConfig reducedMotion="user">
       <HashRouter>

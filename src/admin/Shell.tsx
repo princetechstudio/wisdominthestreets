@@ -108,7 +108,7 @@ export default function Shell() {
   );
 
   return (
-    <div className="console-bg min-h-screen bg-base text-ink">
+    <div className="console-bg min-h-screen text-ink" style={{ backgroundColor: "var(--wits-bg)", color: "var(--wits-ink)" }}>
       <div className="grid-fade" aria-hidden="true" />
       <div className="noise-overlay" aria-hidden="true" />
 
@@ -137,7 +137,7 @@ export default function Shell() {
 
       {/* main column */}
       <div className="lg:pl-64">
-        <header className="sticky top-0 z-30 border-b border-line bg-base/85 backdrop-blur-md">
+        <header className="sticky top-0 z-30 border-b border-line backdrop-blur-md" style={{ backgroundColor: "color-mix(in srgb, var(--wits-bg) 85%, transparent)" }}>
           <div className="flex items-center gap-4 px-4 py-3.5 sm:px-6">
             <button onClick={() => setNav(true)} aria-label="Open menu" className="text-mute transition hover:text-ink lg:hidden"><IcMenu size={20} /></button>
             <div className="min-w-0 flex-1">

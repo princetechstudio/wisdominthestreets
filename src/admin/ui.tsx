@@ -59,8 +59,7 @@ export function Switch({ checked, onChange, label }: { checked: boolean; onChang
       aria-checked={checked}
       aria-label={label}
       onClick={onChange}
-      className={`relative h-5.5 w-10 shrink-0 rounded-full border transition-colors duration-200 ${checked ? "border-teal/60 bg-teal/25" : "border-line bg-sunken"}`}
-      style={{ height: 22 }}
+      className={`relative h-[22px] w-10 shrink-0 rounded-full border transition-colors duration-200 ${checked ? "border-teal/60 bg-teal/25" : "border-line bg-sunken"}`}
     >
       <span
         className={`absolute top-1/2 h-3.5 w-3.5 -translate-y-1/2 rounded-full transition-all duration-200 ${checked ? "left-[22px] bg-teal" : "left-[3px] bg-faint"}`}

@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ============ WITS Producer Console — design tokens ============ */
-@theme inline {
+@theme {
   --color-base: var(--wits-bg);
   --color-panel: var(--wits-panel);
   --color-raise: var(--wits-raise);

@@ -119,7 +119,13 @@ let toastSeq = 0;
 export const useCms = create<CmsState>()((set, get) => ({
   ...loadInitial(),
   toasts: [],
-  hasSeenWelcome: localStorage.getItem("wits-cms-welcome") === "1",
+  hasSeenWelcome: (() => {
+    try {
+      return localStorage.getItem("wits-cms-welcome") === "1";
+    } catch {
+      return false;
+    }
+  })(),
 
   toast: (msg, kind = "success") => {
     const id = ++toastSeq;
