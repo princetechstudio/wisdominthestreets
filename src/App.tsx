@@ -33,6 +33,11 @@ function AnimatedRoutes() {
           <Route path="/quotes" element={<Quotes />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/admin" element={<Admin />} />
+          <Route path="/admin/episodes" element={<Admin />} />
+          <Route path="/admin/quotes" element={<Admin />} />
+          <Route path="/admin/media" element={<Admin />} />
+          <Route path="/admin/analytics" element={<Admin />} />
+          <Route path="/admin/settings" element={<Admin />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </motion.main>
@@ -41,8 +46,10 @@ function AnimatedRoutes() {
 }
 
 function Shell() {
+  const location = useLocation();
   const theme = useStore((s) => s.theme);
   const hasPlayer = useStore((s) => !!s.current);
+  const isAdmin = location.pathname.startsWith("/admin");
 
   /* keep <html> class + data-theme in sync with the store */
   useEffect(() => {
@@ -58,16 +65,16 @@ function Shell() {
   }, []);
 
   return (
-    <div className={`flex min-h-screen flex-col bg-base text-ink transition-[padding] duration-300 ${hasPlayer ? "pb-28" : "pb-0"}`}>
+    <div className={`flex min-h-screen flex-col bg-base text-ink transition-[padding] duration-300 ${!isAdmin && hasPlayer ? "pb-28" : "pb-0"}`}>
       <div className="noise-overlay" aria-hidden="true" />
       <ScrollToTop />
-      <Header />
+      {!isAdmin && <Header />}
       <div className="flex-1">
         <AnimatedRoutes />
       </div>
-      <Footer />
-      <WhatsAppFloat />
-      <PlayerBar />
+      {!isAdmin && <Footer />}
+      {!isAdmin && <WhatsAppFloat />}
+      {!isAdmin && <PlayerBar />}
       <ToastHost />
     </div>
   );

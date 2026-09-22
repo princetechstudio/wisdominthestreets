@@ -1,166 +1,89 @@
 import { useEffect, useState, type ChangeEvent, type FormEvent, type ReactNode } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { BarChart3, CheckCircle2, FileAudio, Headphones, Image as ImageIcon, LayoutDashboard, LogOut, Menu, MessageSquare, Play, Plus, Settings, Sparkles, Upload, Video, X } from "lucide-react";
 import { useCms, type PublishedMedia } from "../lib/cms";
 import { isSupabaseConfigured, supabase } from "../lib/supabase";
 import type { Episode, Quote } from "../data/content";
 
-const emptyEpisode = {
-  id: "", num: "", title: "", category: "Motivation", date: "",
-  duration: "1800", plays: "0", audioUrl: "", blurb: "", description: "",
-  tags: "", imageUrl: "",
-};
+const emptyEpisode = { id: "", num: "", title: "", category: "Motivation", date: "", duration: "1800", plays: "0", audioUrl: "", blurb: "", description: "", tags: "", imageUrl: "" };
 const emptyQuote = { text: "", author: "", episode: "", topic: "Community" };
-const mediaTypes = ["video", "image"] as const;
 
 async function uploadFile(file: File, folder: string) {
   if (!supabase) throw new Error("Supabase is not configured.");
-  const safeName = file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-");
-  const path = `${folder}/${crypto.randomUUID()}-${safeName}`;
+  const path = `${folder}/${crypto.randomUUID()}-${file.name.toLowerCase().replace(/[^a-z0-9._-]+/g, "-")}`;
   const { error } = await supabase.storage.from("wits-media").upload(path, file, { upsert: false, contentType: file.type });
   if (error) throw error;
   return supabase.storage.from("wits-media").getPublicUrl(path).data.publicUrl;
 }
 
 export default function Admin() {
+  const location = useLocation();
   const navigate = useNavigate();
-  const { refresh, media } = useCms();
+  const { refresh, media, episodes, quotes, loading } = useCms();
   const [session, setSession] = useState(false);
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [episode, setEpisode] = useState(emptyEpisode);
-  const [quote, setQuote] = useState(emptyQuote);
+  const [email, setEmail] = useState(""); const [password, setPassword] = useState("");
+  const [episode, setEpisode] = useState(emptyEpisode); const [quote, setQuote] = useState(emptyQuote);
   const [mediaForm, setMediaForm] = useState({ title: "", type: "video" as PublishedMedia["type"], url: "", thumbnailUrl: "", description: "" });
-  const [episodeAudio, setEpisodeAudio] = useState<File | null>(null);
-  const [episodeImage, setEpisodeImage] = useState<File | null>(null);
-  const [mediaFile, setMediaFile] = useState<File | null>(null);
-  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-
+  const [episodeAudio, setEpisodeAudio] = useState<File | null>(null); const [episodeImage, setEpisodeImage] = useState<File | null>(null);
+  const [mediaFile, setMediaFile] = useState<File | null>(null); const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [message, setMessage] = useState(""); const [busy, setBusy] = useState(false); const [mobileNav, setMobileNav] = useState(false);
   useEffect(() => {
     if (!supabase) return;
     void supabase.auth.getSession().then(({ data }) => setSession(Boolean(data.session)));
     const { data } = supabase.auth.onAuthStateChange((_event, authSession) => setSession(Boolean(authSession)));
     return () => data.subscription.unsubscribe();
   }, []);
-
-  const signIn = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!supabase) return;
-    setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    setMessage(error ? error.message : "Welcome back.");
-    setBusy(false);
-  };
-
-  const choose = (setter: (file: File | null) => void) => (event: ChangeEvent<HTMLInputElement>) =>
-    setter(event.target.files?.[0] ?? null);
-
+  const signIn = async (event: FormEvent) => { event.preventDefault(); if (!supabase) return; setBusy(true); const { error } = await supabase.auth.signInWithPassword({ email, password }); setMessage(error ? error.message : "Welcome back."); setBusy(false); };
+  const choose = (setter: (file: File | null) => void) => (event: ChangeEvent<HTMLInputElement>) => setter(event.target.files?.[0] ?? null);
   const publishEpisode = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!supabase) return;
-    setBusy(true); setMessage("");
+    event.preventDefault(); if (!supabase) return; setBusy(true); setMessage("");
     try {
       const audioUrl = episodeAudio ? await uploadFile(episodeAudio, "audio") : episode.audioUrl.trim();
       const imageUrl = episodeImage ? await uploadFile(episodeImage, "episode-art") : episode.imageUrl.trim();
       if (!audioUrl) throw new Error("Add an audio file or audio URL.");
       const id = Number(episode.id);
-      const payload: Episode = {
-        id, num: episode.num, title: episode.title, category: episode.category as Episode["category"],
-        date: episode.date, duration: Number(episode.duration), plays: Number(episode.plays),
-        audioUrl, imageUrl: imageUrl || undefined, blurb: episode.blurb, description: episode.description,
-        tags: episode.tags.split(",").map((tag) => tag.trim()).filter(Boolean), showNotes: [],
-        palette: { a: "#0d2444", b: "#123a63", accent: "#64ffda" },
-      };
+      const payload: Episode = { id, num: episode.num, title: episode.title, category: episode.category as Episode["category"], date: episode.date, duration: Number(episode.duration), plays: Number(episode.plays), audioUrl, imageUrl: imageUrl || undefined, blurb: episode.blurb, description: episode.description, tags: episode.tags.split(",").map((tag) => tag.trim()).filter(Boolean), showNotes: [], palette: { a: "#0d2444", b: "#123a63", accent: "#64ffda" } };
       const { error } = await supabase.from("published_episodes").upsert({ id: String(id), payload, published_at: new Date().toISOString() });
-      if (error) throw error;
-      setEpisode(emptyEpisode); setEpisodeAudio(null); setEpisodeImage(null); setMessage("Episode published successfully."); await refresh();
-    } catch (error) {
-      console.error("Episode publishing failed", error);
-      setMessage(error instanceof Error ? error.message : "Episode publishing failed.");
-    } finally { setBusy(false); }
+      if (error) throw error; setEpisode(emptyEpisode); setEpisodeAudio(null); setEpisodeImage(null); setMessage("Episode published successfully."); await refresh();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Episode publishing failed."); } finally { setBusy(false); }
   };
-
   const publishQuote = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!supabase) return;
-    setBusy(true); setMessage("");
-    const { error } = await supabase.from("published_quotes").insert({ payload: { id: Date.now(), ...quote }, published_at: new Date().toISOString() });
-    setMessage(error ? error.message : "Quote published successfully.");
-    if (!error) { setQuote(emptyQuote); await refresh(); }
-    setBusy(false);
+    event.preventDefault(); if (!supabase) return; setBusy(true); setMessage(""); const { error } = await supabase.from("published_quotes").insert({ payload: { id: Date.now(), ...quote }, published_at: new Date().toISOString() }); setMessage(error ? error.message : "Quote published successfully."); if (!error) { setQuote(emptyQuote); await refresh(); } setBusy(false);
   };
-
   const publishMedia = async (event: FormEvent) => {
-    event.preventDefault();
-    if (!supabase) return;
-    setBusy(true); setMessage("");
+    event.preventDefault(); if (!supabase) return; setBusy(true); setMessage("");
     try {
-      const url = mediaFile ? await uploadFile(mediaFile, mediaForm.type) : mediaForm.url.trim();
-      const thumbnailUrl = thumbnailFile ? await uploadFile(thumbnailFile, "thumbnails") : mediaForm.thumbnailUrl.trim();
+      const url = mediaFile ? await uploadFile(mediaFile, mediaForm.type) : mediaForm.url.trim(); const thumbnailUrl = thumbnailFile ? await uploadFile(thumbnailFile, "thumbnails") : mediaForm.thumbnailUrl.trim();
       if (!url) throw new Error("Choose a file or enter a media URL.");
-      const { error } = await supabase.from("published_media").insert({
-        title: mediaForm.title, type: mediaForm.type, url, thumbnail_url: thumbnailUrl || null,
-        description: mediaForm.description || null, published_at: new Date().toISOString(),
-      });
-      if (error) throw error;
-      setMediaForm({ title: "", type: "video", url: "", thumbnailUrl: "", description: "" });
-      setMediaFile(null); setThumbnailFile(null); setMessage("Media published successfully."); await refresh();
-    } catch (error) {
-      console.error("Media publishing failed", error);
-      setMessage(error instanceof Error ? error.message : "Media publishing failed.");
-    } finally { setBusy(false); }
+      const { error } = await supabase.from("published_media").insert({ title: mediaForm.title, type: mediaForm.type, url, thumbnail_url: thumbnailUrl || null, description: mediaForm.description || null, published_at: new Date().toISOString() });
+      if (error) throw error; setMediaForm({ title: "", type: "video", url: "", thumbnailUrl: "", description: "" }); setMediaFile(null); setThumbnailFile(null); setMessage("Media published successfully."); await refresh();
+    } catch (error) { setMessage(error instanceof Error ? error.message : "Media publishing failed."); } finally { setBusy(false); }
   };
-
   if (!isSupabaseConfigured) return <AdminFrame><SetupMessage /></AdminFrame>;
-  if (!session) return <AdminFrame><form onSubmit={signIn} className="mx-auto max-w-md rounded-2xl border border-line bg-panel p-8 shadow-2xl shadow-black/10"><p className="admin-kicker">Private publishing desk</p><h1 className="font-display mt-3 text-6xl text-ink">SIGN IN</h1><p className="mt-3 text-sm leading-relaxed text-mute">Manage the corner from one calm workspace.</p><div className="mt-8 space-y-3"><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Admin email" className="admin-input" /><input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="admin-input" /><button disabled={busy} className="admin-button w-full">{busy ? "Signing in…" : "Sign in"}</button></div>{message && <p role="alert" className="mt-4 text-sm text-ember">{message}</p>}</form></AdminFrame>;
+  if (!session) return <AdminFrame><form onSubmit={signIn} className="mx-auto max-w-md rounded-2xl border border-line bg-panel p-8 shadow-2xl"><p className="admin-kicker">Private publishing desk</p><h1 className="font-display mt-3 text-6xl text-ink">SIGN IN</h1><p className="mt-3 text-sm text-mute">Manage the corner from one calm workspace.</p><div className="mt-8 space-y-3"><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Admin email" className="admin-input" /><input required type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Password" className="admin-input" /><button disabled={busy} className="admin-button w-full">{busy ? "Signing in…" : "Sign in"}</button></div>{message && <p role="alert" className="mt-4 text-sm text-ember">{message}</p>}</form></AdminFrame>;
 
-  return (
-    <AdminFrame>
-      <header className="flex flex-wrap items-end justify-between gap-5">
-        <div><p className="admin-kicker">Private publishing desk</p><h1 className="font-display mt-2 text-6xl leading-none text-ink sm:text-8xl">THE <span className="text-hollow">CORNER</span></h1><p className="mt-4 max-w-xl text-sm text-mute">Publish once. Reach every listener. Upload from your laptop or paste a hosted URL.</p></div>
-        <button onClick={async () => { await supabase?.auth.signOut(); navigate("/"); }} className="admin-secondary">Sign out</button>
-      </header>
-
-      <div className="mt-10 grid gap-5 sm:grid-cols-3">
-        <Stat label="Published media" value={media.length} />
-        <Stat label="Storage bucket" value="WITS media" />
-        <Stat label="Publishing status" value={busy ? "Working…" : "Ready"} />
-      </div>
-
-      <div className="mt-10 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <section className="admin-card">
-          <div className="admin-section-title"><div><p className="admin-kicker">01 · Audio archive</p><h2>Publish an episode</h2></div><span className="admin-badge">MP3 / M4A</span></div>
-          <form onSubmit={publishEpisode} className="mt-6 grid gap-4 sm:grid-cols-2">
-            <Field label="Episode number"><input required value={episode.num} onChange={(e) => setEpisode({ ...episode, num: e.target.value })} placeholder="011" className="admin-input" /></Field>
-            <Field label="Database ID"><input required type="number" value={episode.id} onChange={(e) => setEpisode({ ...episode, id: e.target.value })} placeholder="11" className="admin-input" /></Field>
-            <Field label="Title" wide><input required value={episode.title} onChange={(e) => setEpisode({ ...episode, title: e.target.value })} placeholder="The next lesson" className="admin-input" /></Field>
-            <Field label="Category"><select value={episode.category} onChange={(e) => setEpisode({ ...episode, category: e.target.value })} className="admin-input"><option>Motivation</option><option>Business</option><option>Life</option><option>Relationships</option></select></Field>
-            <Field label="Release date"><input required type="date" value={episode.date} onChange={(e) => setEpisode({ ...episode, date: e.target.value })} className="admin-input" /></Field>
-            <Field label="Duration (seconds)"><input required type="number" value={episode.duration} onChange={(e) => setEpisode({ ...episode, duration: e.target.value })} className="admin-input" /></Field>
-            <Field label="Tags" wide><input value={episode.tags} onChange={(e) => setEpisode({ ...episode, tags: e.target.value })} placeholder="discipline, growth, money" className="admin-input" /></Field>
-            <FileField label="Upload audio from laptop" file={episodeAudio} onChange={choose(setEpisodeAudio)} accept="audio/*" />
-            <Field label="Or paste audio URL"><input value={episode.audioUrl} onChange={(e) => setEpisode({ ...episode, audioUrl: e.target.value })} placeholder="https://…" className="admin-input" /></Field>
-            <FileField label="Episode cover image" file={episodeImage} onChange={choose(setEpisodeImage)} accept="image/*" />
-            <Field label="Or paste cover URL"><input value={episode.imageUrl} onChange={(e) => setEpisode({ ...episode, imageUrl: e.target.value })} placeholder="https://…" className="admin-input" /></Field>
-            <Field label="Short description" wide><textarea required rows={2} value={episode.blurb} onChange={(e) => setEpisode({ ...episode, blurb: e.target.value })} className="admin-input" /></Field>
-            <Field label="Full description" wide><textarea required rows={5} value={episode.description} onChange={(e) => setEpisode({ ...episode, description: e.target.value })} className="admin-input" /></Field>
-            <button disabled={busy} className="admin-button sm:col-span-2">{busy ? "Uploading and publishing…" : "Publish episode"}</button>
-          </form>
-        </section>
-
-        <div className="space-y-6">
-          <section className="admin-card"><div className="admin-section-title"><div><p className="admin-kicker">02 · Quotes</p><h2>Publish a quote</h2></div><span className="admin-badge">Shareable</span></div><form onSubmit={publishQuote} className="mt-6 space-y-4"><Field label="Quote"><textarea required rows={5} value={quote.text} onChange={(e) => setQuote({ ...quote, text: e.target.value })} placeholder="A line worth carrying home…" className="admin-input" /></Field><Field label="Author"><input required value={quote.author} onChange={(e) => setQuote({ ...quote, author: e.target.value })} placeholder="Marvin Marbell" className="admin-input" /></Field><div className="grid gap-4 sm:grid-cols-2"><Field label="Episode"><input required value={quote.episode} onChange={(e) => setQuote({ ...quote, episode: e.target.value })} placeholder="EP 011" className="admin-input" /></Field><Field label="Topic"><input required value={quote.topic} onChange={(e) => setQuote({ ...quote, topic: e.target.value })} placeholder="Growth" className="admin-input" /></Field></div><button disabled={busy} className="admin-button w-full">Publish quote</button></form></section>
-          <section className="admin-card"><div className="admin-section-title"><div><p className="admin-kicker">03 · Visuals</p><h2>Publish media</h2></div><span className="admin-badge">Image / video</span></div><form onSubmit={publishMedia} className="mt-6 space-y-4"><Field label="Title"><input required value={mediaForm.title} onChange={(e) => setMediaForm({ ...mediaForm, title: e.target.value })} placeholder="Behind the mic" className="admin-input" /></Field><Field label="Media type"><select value={mediaForm.type} onChange={(e) => setMediaForm({ ...mediaForm, type: e.target.value as PublishedMedia["type"] })} className="admin-input">{mediaTypes.map((type) => <option key={type}>{type}</option>)}</select></Field><FileField label={`Upload ${mediaForm.type} from laptop`} file={mediaFile} onChange={choose(setMediaFile)} accept={mediaForm.type === "video" ? "video/*" : "image/*"} /><Field label="Or paste media URL"><input value={mediaForm.url} onChange={(e) => setMediaForm({ ...mediaForm, url: e.target.value })} placeholder="https://…" className="admin-input" /></Field>{mediaForm.type === "video" && <><FileField label="Video thumbnail (optional)" file={thumbnailFile} onChange={choose(setThumbnailFile)} accept="image/*" /><Field label="Or paste thumbnail URL"><input value={mediaForm.thumbnailUrl} onChange={(e) => setMediaForm({ ...mediaForm, thumbnailUrl: e.target.value })} placeholder="https://…" className="admin-input" /></Field></>}<Field label="Caption (optional)"><textarea rows={2} value={mediaForm.description} onChange={(e) => setMediaForm({ ...mediaForm, description: e.target.value })} className="admin-input" /></Field><button disabled={busy} className="admin-button w-full">{busy ? "Uploading…" : "Publish media"}</button></form></section>
-        </div>
-      </div>
-      {message && <p role="status" className="mt-6 rounded-lg border border-teal/30 bg-teal/10 px-4 py-3 text-sm text-teal">{message}</p>}
-    </AdminFrame>
-  );
+  const page = location.pathname.split("/")[2] || "overview";
+  const go = (path: string) => { navigate(path); setMobileNav(false); };
+  const content = page === "episodes" ? <ContentPage title="Episodes" eyebrow="Audio archive" icon={<FileAudio />} items={episodes.map((item) => `${item.num} · ${item.title} · ${item.date || "No release date"}`)} links={episodes.map((item) => `/episode/${item.id}`)} empty="No published episodes yet." form={<EpisodeForm {...{ episode, setEpisode, episodeAudio, setEpisodeAudio, episodeImage, setEpisodeImage, choose, publishEpisode, busy }} />} /> :
+    page === "quotes" ? <ContentPage title="Quotes" eyebrow="Shareable content" icon={<MessageSquare />} items={quotes.map((item) => `“${item.text}” — ${item.author}`)} empty="No published quotes yet." form={<QuoteForm {...{ quote, setQuote, publishQuote, busy }} />} /> :
+    page === "media" ? <ContentPage title="Media" eyebrow="Image and video library" icon={<ImageIcon />} items={media.map((item) => `${item.title} · ${item.type}`)} empty="No published media yet." form={<MediaForm {...{ mediaForm, setMediaForm, mediaFile, setMediaFile, thumbnailFile, setThumbnailFile, choose, publishMedia, busy }} />} /> :
+    page === "analytics" ? <Analytics episodes={episodes} quotes={quotes} media={media} /> :
+    page === "settings" ? <SettingsPage email={email} onSignOut={async () => { await supabase?.auth.signOut(); navigate("/"); }} configured={Boolean(supabase)} /> :
+    <Overview episodes={episodes} quotes={quotes} media={media} loading={loading} go={go} />;
+  return <AdminFrame><aside className={`fixed inset-y-0 left-0 z-40 w-64 border-r border-line bg-[#08162b] p-6 transition-transform lg:translate-x-0 ${mobileNav ? "translate-x-0" : "-translate-x-full"}`}><div className="flex items-center justify-between"><div className="flex items-center gap-2 text-ink"><span className="grid h-9 w-9 place-items-center rounded-lg bg-teal text-[#08162b]"><Sparkles size={18} /></span><span className="font-head text-sm font-bold leading-tight">WISDOM IN<br />THE STREETS</span></div><button className="text-mute lg:hidden" onClick={() => setMobileNav(false)}><X size={20} /></button></div><p className="mt-10 admin-kicker">Workspace</p><nav className="mt-3 space-y-1">{[[LayoutDashboard, "Overview", "/admin"], [FileAudio, "Episodes", "/admin/episodes"], [MessageSquare, "Quotes", "/admin/quotes"], [ImageIcon, "Media", "/admin/media"], [BarChart3, "Analytics", "/admin/analytics"], [Settings, "Settings", "/admin/settings"]].map(([Icon, label, path]) => <button key={String(path)} className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm ${location.pathname === path ? "bg-teal/10 text-teal" : "text-mute hover:bg-white/5 hover:text-ink"}`} onClick={() => go(String(path))}><Icon size={17} />{String(label)}</button>)}</nav><div className="absolute bottom-6 left-6 right-6 border-t border-line pt-5"><button onClick={async () => { await supabase?.auth.signOut(); navigate("/"); }} className="flex items-center gap-3 text-sm text-mute hover:text-ember"><LogOut size={17} />Sign out</button></div></aside>{mobileNav && <button aria-label="Close navigation" className="fixed inset-0 z-30 bg-black/60 lg:hidden" onClick={() => setMobileNav(false)} />}<div className="lg:pl-64"><header className="flex items-center justify-between border-b border-line pb-6"><button className="text-mute lg:hidden" onClick={() => setMobileNav(true)}><Menu /></button>  <div><p className="admin-kicker">Publishing workspace</p><h1 className="mt-2 font-head text-2xl font-semibold text-ink">Good morning, Marvin <span>👋</span></h1></div><div className="flex items-center gap-3"><button onClick={() => go("/")} className="admin-secondary flex items-center gap-2"><Headphones size={15} /> Listen</button>{page === "overview" && <button onClick={() => go("/admin/episodes")} className="admin-button flex items-center gap-2"><Plus size={16} /> <span className="hidden sm:inline">Add new episode</span>  <span className="sm:hidden">Add</span></button>}</div></header>{message && <p role="status" className="mt-6 rounded-lg border border-teal/30 bg-teal/10 px-4 py-3 text-sm text-teal">{message}</p>}{content}</div></AdminFrame>;
 }
 
-function AdminFrame({ children }: { children: ReactNode }) { return <main className="mx-auto min-h-screen max-w-7xl px-4 pb-28 pt-28 sm:px-6 lg:px-8 lg:pt-36">{children}</main>; }
+function AdminFrame({ children }: { children: ReactNode }) { return <main className="min-h-screen bg-base px-4 pb-28 pt-8 sm:px-6 lg:px-8 lg:pt-10">{children}</main>; }
 function SetupMessage() { return <div className="mx-auto mt-8 max-w-2xl rounded-2xl border border-ember/40 bg-panel p-8"><p className="admin-kicker">Setup required</p><h1 className="font-display mt-3 text-6xl text-ink">CONNECT SUPABASE</h1><p className="mt-4 text-mute">Set your Supabase environment variables, run supabase/schema.sql, and create an admin user.</p></div>; }
-function Stat({ label, value }: { label: string; value: string | number }) { return <div className="rounded-xl border border-line bg-panel p-5"><p className="admin-kicker">{label}</p><p className="mt-2 font-display text-3xl text-ink">{value}</p></div>; }
+function Heading({ title, eyebrow, icon }: { title: string; eyebrow: string; icon?: ReactNode }) { return <div className="flex items-end gap-3 border-b border-line pb-5"><span className="text-teal">{icon}</span><div><p className="admin-kicker">{eyebrow}</p><h2 className="mt-1 font-display text-5xl tracking-wide text-ink">{title}</h2></div></div>; }
+function ContentPage({ title, eyebrow, icon, items, links, empty, form }: { title: string; eyebrow: string; icon: ReactNode; items: string[]; links?: string[]; empty: string; form: ReactNode }) { return <div className="mt-8 grid gap-6 xl:grid-cols-[1fr_1.2fr]"><section className="admin-card"><Heading {...{ title, eyebrow, icon }} /><div className="mt-5 divide-y divide-line">{items.length ? items.map((item, i) => <div key={i} className="flex items-center gap-3 py-4 text-sm text-ink"><span className="grid h-9 w-9 place-items-center rounded-lg bg-teal/10 text-teal">{icon}</span>{links?.[i] ? <a href={`#${links[i]}`} className="text-teal hover:underline">{item}</a> : <span>{item}</span>}</div>) : <p className="py-10 text-sm text-mute">{empty}</p>}</div></section><section className="admin-card"><Heading title={`Add ${title.slice(0, -1).toLowerCase()}`} eyebrow="Publish new content" icon={<Plus />} />{form}</section></div>; }
+function Overview({ episodes, quotes, media, loading, go }: { episodes: Episode[]; quotes: Quote[]; media: PublishedMedia[]; loading: boolean; go: (path: string) => void }) { const plays = episodes.reduce((sum, item) => sum + (item.plays || 0), 0); return <><div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat icon={<FileAudio />} label="Episodes" value={episodes.length} /><Stat icon={<Play />} label="Total plays" value={plays.toLocaleString()} /><Stat icon={<MessageSquare />} label="Quotes" value={quotes.length} /><Stat icon={<CheckCircle2 />} label="Website status" value="Live" /></div><section className="admin-card mt-6"><Heading title="Recent episodes" eyebrow="Your latest content" icon={<FileAudio />} />{episodes.slice(0, 5).map((item) => <button onClick={() => go("/admin/episodes")} key={item.id} className="flex w-full items-center gap-3 border-b border-line py-4 text-left text-sm text-ink"><FileAudio size={17} className="text-teal" /><span>{item.title}</span><span className="ml-auto text-xs text-mute">{item.date}</span></button>)}{!episodes.length && <p className="py-8 text-sm text-mute">No episodes yet.</p>}</section><div className="mt-6 grid gap-6 sm:grid-cols-3"><button onClick={() => go("/admin/episodes")} className="admin-card text-left"><FileAudio className="text-teal" /><p className="mt-4 font-semibold text-ink">Manage episodes</p><p className="mt-1 text-xs text-mute">Publish and review your audio archive.</p></button><button onClick={() => go("/admin/quotes")} className="admin-card text-left"><MessageSquare className="text-teal" /><p className="mt-4 font-semibold text-ink">Share a quote</p><p className="mt-1 text-xs text-mute">{quotes.length} published quotes</p></button><button onClick={() => go("/admin/media")} className="admin-card text-left"><ImageIcon className="text-teal" /><p className="mt-4 font-semibold text-ink">Add media</p><p className="mt-1 text-xs text-mute">{media.length} published assets</p></button></div><p className="mt-5 text-xs text-mute">{loading ? "Refreshing content…" : "Content is synced with Supabase."}</p></>; }
+function Analytics({ episodes, quotes, media }: { episodes: Episode[]; quotes: Quote[]; media: PublishedMedia[] }) { const plays = episodes.reduce((sum, item) => sum + (item.plays || 0), 0); const average = episodes.length ? Math.round(plays / episodes.length) : 0; return <div className="mt-8"><Heading title="Analytics" eyebrow="Performance at a glance" icon={<BarChart3 />} /><div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"><Stat icon={<Play />} label="All-time plays" value={plays.toLocaleString()} /><Stat icon={<Play />} label="Average plays / episode" value={average.toLocaleString()} /><Stat icon={<FileAudio />} label="Published episodes" value={episodes.length} /><Stat icon={<ImageIcon />} label="Total assets" value={quotes.length + media.length} /></div><section className="admin-card mt-6"><h3 className="font-head text-lg font-semibold text-ink">Library breakdown</h3><div className="mt-5 space-y-4"><Bar label="Episodes" value={episodes.length} total={Math.max(episodes.length, quotes.length, media.length, 1)} /><Bar label="Quotes" value={quotes.length} total={Math.max(episodes.length, quotes.length, media.length, 1)} /><Bar label="Media" value={media.length} total={Math.max(episodes.length, quotes.length, media.length, 1)} /></div><p className="mt-6 text-xs text-mute">Metrics are calculated from published Supabase records. Audience tracking is not configured.</p></section></div>; }
+function Bar({ label, value, total }: { label: string; value: number; total: number }) { return <div><div className="flex justify-between text-sm"><span className="text-mute">{label}</span><span className="text-ink">{value}</span></div><div className="mt-2 h-2 rounded-full bg-base"><div className="h-2 rounded-full bg-teal" style={{ width: `${(value / total) * 100}%` }} /></div></div>; }
+function SettingsPage({ email, onSignOut, configured }: { email: string; onSignOut: () => void; configured: boolean }) { return <div className="mt-8 max-w-3xl space-y-6"><Heading title="Settings" eyebrow="Account and site configuration" icon={<Settings />} /><section className="admin-card"><h3 className="font-head text-lg font-semibold text-ink">Account</h3><p className="mt-3 text-sm text-mute">Signed in as {email || "your Supabase admin account"}.</p><button onClick={onSignOut} className="admin-secondary mt-5 flex items-center gap-2"><LogOut size={15} />Sign out</button></section><section className="admin-card"><h3 className="font-head text-lg font-semibold text-ink">Site status</h3><div className="mt-5 flex items-center gap-3"><CheckCircle2 className="text-teal" /><span className="text-sm text-ink">{configured ? "Supabase is configured and content sync is enabled." : "Supabase configuration is missing."}</span></div><p className="mt-4 text-xs text-mute">Site configuration is managed through environment variables and Supabase. No local settings are persisted here.</p></section></div>; }
+function Stat({ icon, label, value }: { icon: ReactNode; label: string; value: string | number }) { return <div className="admin-card p-5"><span className="text-teal">{icon}</span><p className="mt-5 text-xs text-mute">{label}</p><p className="mt-1 font-head text-2xl font-semibold text-ink">{value}</p></div>; }
 function Field({ label, wide, children }: { label: string; wide?: boolean; children: ReactNode }) { return <label className={`block ${wide ? "sm:col-span-2" : ""}`}><span className="admin-label">{label}</span>{children}</label>; }
-function FileField({ label, file, onChange, accept }: { label: string; file: File | null; onChange: (event: ChangeEvent<HTMLInputElement>) => void; accept: string }) { return <label className="block"><span className="admin-label">{label}</span><span className="flex min-h-11 cursor-pointer items-center rounded-lg border border-dashed border-teal/40 bg-teal/[0.04] px-3 text-sm text-mute transition hover:border-teal hover:text-teal"><input type="file" accept={accept} onChange={onChange} className="sr-only" />{file ? <><span className="truncate text-teal">{file.name}</span><span className="ml-auto text-xs">{Math.ceil(file.size / 1024 / 1024)} MB</span></> : "Choose a file…"}</span></label>; }
+function FileField({ label, file, onChange, accept }: { label: string; file: File | null; onChange: (event: ChangeEvent<HTMLInputElement>) => void; accept: string }) { return <label className="block"><span className="admin-label">{label}</span><span className="flex min-h-11 cursor-pointer items-center rounded-lg border border-dashed border-teal/40 bg-teal/[0.04] px-3 text-sm text-mute"><input type="file" accept={accept} onChange={onChange} className="sr-only" />{file ? <span className="truncate text-teal">{file.name}</span> : "Choose a file…"}</span></label>; }
+function EpisodeForm({ episode, setEpisode, episodeAudio, setEpisodeAudio, episodeImage, setEpisodeImage, choose, publishEpisode, busy }: any) { return <form onSubmit={publishEpisode} className="mt-6 grid gap-4 sm:grid-cols-2"><Field label="Episode number"><input required value={episode.num} onChange={(e) => setEpisode({ ...episode, num: e.target.value })} placeholder="011" className="admin-input" /></Field><Field label="Database ID"><input required type="number" value={episode.id} onChange={(e) => setEpisode({ ...episode, id: e.target.value })} placeholder="11" className="admin-input" /></Field><Field label="Title" wide><input required value={episode.title} onChange={(e) => setEpisode({ ...episode, title: e.target.value })} className="admin-input" /></Field><Field label="Category"><select value={episode.category} onChange={(e) => setEpisode({ ...episode, category: e.target.value })} className="admin-input"><option>Motivation</option><option>Business</option><option>Life</option><option>Relationships</option></select></Field><Field label="Release date"><input required type="date" value={episode.date} onChange={(e) => setEpisode({ ...episode, date: e.target.value })} className="admin-input" /></Field><Field label="Duration (seconds)"><input required type="number" value={episode.duration} onChange={(e) => setEpisode({ ...episode, duration: e.target.value })} className="admin-input" /></Field><Field label="Tags" wide><input value={episode.tags} onChange={(e) => setEpisode({ ...episode, tags: e.target.value })} placeholder="discipline, growth" className="admin-input" /></Field><FileField label="Upload audio" file={episodeAudio} onChange={choose(setEpisodeAudio)} accept="audio/*" /><Field label="Or paste audio URL"><input value={episode.audioUrl} onChange={(e) => setEpisode({ ...episode, audioUrl: e.target.value })} className="admin-input" /></Field><FileField label="Episode cover image" file={episodeImage} onChange={choose(setEpisodeImage)} accept="image/*" /><Field label="Or paste cover URL"><input value={episode.imageUrl} onChange={(e) => setEpisode({ ...episode, imageUrl: e.target.value })} className="admin-input" /></Field><Field label="Short description" wide><textarea required rows={2} value={episode.blurb} onChange={(e) => setEpisode({ ...episode, blurb: e.target.value })} className="admin-input" /></Field><Field label="Full description" wide><textarea required rows={4} value={episode.description} onChange={(e) => setEpisode({ ...episode, description: e.target.value })} className="admin-input" /></Field><button disabled={busy} className="admin-button sm:col-span-2">{busy ? "Uploading and publishing…" : "Publish episode"}</button></form>; }
+function QuoteForm({ quote, setQuote, publishQuote, busy }: any) { return <form onSubmit={publishQuote} className="mt-6 space-y-4"><Field label="Quote"><textarea required rows={4} value={quote.text} onChange={(e) => setQuote({ ...quote, text: e.target.value })} className="admin-input" /></Field><Field label="Author"><input required value={quote.author} onChange={(e) => setQuote({ ...quote, author: e.target.value })} className="admin-input" /></Field><div className="grid gap-4 sm:grid-cols-2"><Field label="Episode"><input required value={quote.episode} onChange={(e) => setQuote({ ...quote, episode: e.target.value })} className="admin-input" /></Field><Field label="Topic"><input required value={quote.topic} onChange={(e) => setQuote({ ...quote, topic: e.target.value })} className="admin-input" /></Field></div><button disabled={busy} className="admin-button w-full">Publish quote</button></form>; }
+function MediaForm({ mediaForm, setMediaForm, mediaFile, setMediaFile, thumbnailFile, setThumbnailFile, choose, publishMedia, busy }: any) { return <form onSubmit={publishMedia} className="mt-6 space-y-4"><Field label="Title"><input required value={mediaForm.title} onChange={(e) => setMediaForm({ ...mediaForm, title: e.target.value })} className="admin-input" /></Field><Field label="Media type"><select value={mediaForm.type} onChange={(e) => setMediaForm({ ...mediaForm, type: e.target.value as PublishedMedia["type"] })} className="admin-input"><option>video</option><option>image</option></select></Field><FileField label={`Upload ${mediaForm.type}`} file={mediaFile} onChange={choose(setMediaFile)} accept={mediaForm.type === "video" ? "video/*" : "image/*"} /><Field label="Or paste media URL"><input value={mediaForm.url} onChange={(e) => setMediaForm({ ...mediaForm, url: e.target.value })} className="admin-input" /></Field><Field label="Caption (optional)"><textarea rows={2} value={mediaForm.description} onChange={(e) => setMediaForm({ ...mediaForm, description: e.target.value })} className="admin-input" /></Field><button disabled={busy} className="admin-button w-full">Publish media</button></form>; }
