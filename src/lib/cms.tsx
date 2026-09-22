@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { EPISODES, QUOTES, type Episode, type Quote } from "../data/content";
+import type { Episode, Quote } from "../data/content";
 import { supabase } from "./supabase";
 
 export interface PublishedMedia {
@@ -22,8 +22,8 @@ interface CmsContextValue {
 }
 
 const CmsContext = createContext<CmsContextValue>({
-  episodes: EPISODES,
-  quotes: QUOTES,
+  episodes: [],
+  quotes: [],
   media: [],
   loading: false,
   configured: false,
@@ -67,13 +67,9 @@ export function CmsProvider({ children }: { children: ReactNode }) {
   useEffect(() => { void refresh(); }, []);
 
   const value = useMemo(() => {
-    const episodeMap = new Map((supabase ? publishedEpisodes : EPISODES).map((episode) => [episode.id, episode]));
-    if (supabase) publishedEpisodes.forEach((episode) => episodeMap.set(episode.id, episode));
-    const quoteMap = new Map((supabase ? publishedQuotes : QUOTES).map((quote) => [quote.id, quote]));
-    if (supabase) publishedQuotes.forEach((quote) => quoteMap.set(quote.id, quote));
     return {
-      episodes: [...episodeMap.values()].sort((a, b) => b.date.localeCompare(a.date)),
-      quotes: [...quoteMap.values()],
+      episodes: [...publishedEpisodes].sort((a, b) => b.date.localeCompare(a.date)),
+      quotes: [...publishedQuotes],
       media,
       loading,
       configured: Boolean(supabase),

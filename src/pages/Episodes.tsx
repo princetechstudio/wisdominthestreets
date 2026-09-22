@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useStore } from "../store";
-import { EPISODES, type Category } from "../data/content";
+import { type Category } from "../data/content";
 import { EpisodeCard } from "../components/cards";
 import { Reveal, usePageMeta } from "../components/ui";
 import { IconHeart, IconMic, IconSearch } from "../components/icons";

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { QUOTES, QUOTE_TOPICS } from "../data/content";
+import { QUOTE_TOPICS } from "../data/content";
 import { QuoteCard } from "../components/cards";
 import { Reveal, usePageMeta } from "../components/ui";
 import { IconQuote } from "../components/icons";
@@ -10,11 +10,11 @@ export default function Quotes() {
   usePageMeta("Quotes Library — 20 lines worth printing", "Twenty of the sharpest lines from Wisdom In The Streets. Copy them, share them, or download them as images.");
 
   const [topic, setTopic] = useState("All");
-  const { quotes, configured } = useCms();
+  const { quotes } = useCms();
   const list = useMemo(() => (topic === "All" ? quotes : quotes.filter((q) => q.topic === topic)), [topic, quotes]);
-  const opener = quotes[quotes.length - 1] ?? QUOTES[19];
+  const opener = quotes[quotes.length - 1];
 
-  if (configured && quotes.length === 0) {
+  if (quotes.length === 0) {
     return (
       <div className="mx-auto grid min-h-[70vh] max-w-3xl place-items-center px-4 pb-28 pt-32 text-center">
         <div><p className="font-head text-xs font-bold uppercase tracking-[0.28em] text-teal">Quote library</p><h1 className="font-display mt-4 text-6xl text-ink">NO LINES <span className="text-hollow">YET</span></h1><p className="mt-4 text-sm text-mute">Publish the first quote from the admin desk.</p><Link to="/admin" className="font-head mt-7 inline-flex rounded-full bg-teal px-6 py-3 text-xs font-bold uppercase tracking-widest text-[#0a192f]">Publish a quote</Link></div>

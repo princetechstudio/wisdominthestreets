@@ -115,6 +115,7 @@ export default function Home() {
   const latest = [...episodes].slice(0, 6);
   const weekQuote = quotes[weekIdx % quotes.length] ?? WEEK_QUOTES[weekIdx];
   const favFeat = favorites.includes(featured.id);
+  const hasPublishedContent = episodes.length > 0 || quotes.length > 0 || media.length > 0;
 
   return (
     <>
@@ -296,6 +297,8 @@ export default function Home() {
         </div>
       </section>
 
+      {hasPublishedContent ? (
+        <>
       {/* ================= FEATURED EPISODE ================= */}
       <section className="relative mx-auto max-w-7xl px-4 py-24 sm:px-6 lg:px-8">
         <SectionHead
@@ -559,6 +562,15 @@ export default function Home() {
           </div>
         </Reveal>
       </section>
+        </>
+      ) : (
+        <section className="mx-auto max-w-3xl px-4 pb-28 pt-20 text-center sm:px-6">
+          <p className="font-head text-xs font-bold uppercase tracking-[0.28em] text-teal">The publishing desk is open</p>
+          <h2 className="font-display mt-4 text-5xl leading-none text-ink sm:text-7xl">NEW STORIES<br /><span className="text-hollow">COMING SOON</span></h2>
+          <p className="mx-auto mt-5 max-w-xl text-sm leading-relaxed text-mute">The hero is ready. Publish an episode, quote, image, or video from the admin desk to fill the public archive.</p>
+          <Link to="/admin" className="font-head mt-8 inline-flex rounded-full bg-teal px-7 py-3 text-xs font-bold uppercase tracking-widest text-[#0a192f]">Open publishing desk</Link>
+        </section>
+      )}
     </>
   );
 }

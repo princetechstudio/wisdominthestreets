@@ -122,8 +122,8 @@ The private publishing desk is available at `/#/admin` after Supabase is configu
 Run [`supabase/schema.sql`](./supabase/schema.sql) in the Supabase SQL editor, add
 an admin user under Authentication, and set `VITE_SUPABASE_URL` plus
 `VITE_SUPABASE_ANON_KEY` in the hosting provider. The admin can publish podcast
-episodes, quotes, image URLs, and video URLs; public pages retain the built-in
-catalog as a fallback and overlay published records from Supabase.
+episodes, quotes, image URLs, and video URLs; public archive sections stay empty
+until content is published in Supabase.
 
 ## Deployment
 
